@@ -60,3 +60,6 @@ button{font:inherit;color:inherit;cursor:pointer}.app{max-width:1240px;margin:au
 @keyframes neoAvatarHeal{0%,100%{transform:scale(1)}35%{transform:scale(1.07)}65%{transform:scale(.98)}}
 @keyframes neoScreenHit{0%{background-color:#ff203020}100%{background-color:transparent}}
 @media(prefers-reduced-motion:reduce){.portrait.neo-avatar-attack,.portrait.neo-avatar-crit,.portrait.neo-avatar-hit,.portrait.neo-avatar-heal,.neo-hit-flash{animation:none}}
+
+/* Neo encounter HP bars */
+.neo-hp-track{height:7px;overflow:hidden;background:#28151b;border:1px solid #56313a;border-radius:99px;margin:6px 0 3px;max-width:260px}.neo-hp-track span{display:block;height:100%;background:linear-gradient(90deg,#7d172b,#d64b59);border-radius:99px;transition:width .35s ease}

@@ -28,9 +28,10 @@ function renderNeoModule(key){
 }
 function neoNotice(message,error=false){let el=$("#neoModuleNotice");if(!el){el=document.createElement("p");el.id="neoModuleNotice";el.className="neo-notice";$("#viewCards")?.prepend(el);}el.textContent=message;el.classList.toggle("error",error);}
 function neoProgressionTotals(d){
- const result={dmg:0,pc:0,pd:0,hp:0,sm:0,ph:0,skillSpent:0};
- NEO_ARCHETYPES.forEach(([id,,bonus])=>{const level=Math.max(0,Math.min(8,Number(d.progression.archetypes[id]||0)));Object.keys(result).forEach(k=>{if(bonus[k]!=null)result[k]+=level*bonus[k];});});
- Object.entries(d.progression.skills||{}).forEach(([id,rank])=>{const index=Math.max(0,Math.min(7,Number(rank)||0));if(value>=0&&value<=7)result.skillSpent+=NEO_SKILL_COSTS[value];});
+ const result={dmg:0,pc:0,pd:0,hp:0,sm:0,ph:0,skillSpent:0,skills:0};
+ NEO_ARCHETYPES.forEach(([id,,bonus])=>{const level=Math.max(0,Math.min(8,Number(d.progression.archetypes[id]||0)));result.dmg+=level*bonus.dmg;result.pc+=level*bonus.pc;result.pd+=level*bonus.pd;result.hp+=level*bonus.hp;result.sm+=level*bonus.sm;result.ph+=level*bonus.ph;});
+ Object.values(d.progression.skills||{}).forEach(rank=>{const value=Number(rank);if(Number.isInteger(value)&&value>=0&&value<=7){result.skillSpent+=NEO_SKILL_COSTS[value];result.skills++;}});
+ const a=d.progression.aspects||{};result.damagePercent=Math.max(0,Number(a.ofensiva)||0)*5;result.aspectPD=Math.max(0,Number(a.defensiva)||0);result.crit=Math.max(0,Number(a.tactica)||0);result.techPoints=(Math.max(0,Number(d.essence?.level)||0)*2)+(Math.max(0,Number(a.asistencia)||0)*([0,0,0,2,2,2,3,3,3,4,4,4,5][Math.max(0,Math.min(12,Number(d.essence?.level)||0))]||0));
  return result;
 }
 function renderNeoProfile(d){

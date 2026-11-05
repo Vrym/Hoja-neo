@@ -28,6 +28,24 @@
 <button class="module log" data-section="log"><span class="ico">📖</span><strong>Bitácora</strong><small>Misiones y registros...</small></button>
 <button class="module profile" data-section="profile"><span class="ico">♧</span><strong>Perfil</strong><small>Tu historia...</small></button>
 </nav></div>
+<section id="masterConsole" class="master-console frame" hidden>
+  <div class="master-console-head"><div><p class="eyebrow">DIRECCIÓN DE PARTIDA</p><h2>✧ Consola del Master</h2><p class="console-subtitle">Administrá el grupo y las fichas de la mesa.</p></div><button id="closeMasterConsole" class="back" type="button">← Volver a mi hoja</button></div>
+  <div class="console-summary" id="masterConsoleStatus">Conectando con la mesa…</div>
+  <div class="master-layout">
+    <section class="master-panel"><div class="master-panel-head"><h3>✧ Grupo de aventureros</h3><button id="refreshRoster" class="console-small-btn" type="button">Actualizar</button></div><div id="masterRoster" class="master-roster"><p class="empty">Cargando jugadores…</p></div></section>
+    <section class="master-panel"><div class="master-panel-head"><h3>✧ Editor de personaje</h3></div><p id="editorHint" class="empty">Elegí un jugador para consultar o editar su ficha.</p>
+      <form id="characterEditor" class="character-editor" hidden>
+        <input id="editUid" type="hidden">
+        <label>Jugador<input id="editUsername" type="text" disabled></label>
+        <label>Nombre del personaje<input id="editName" type="text" maxlength="80" placeholder="Nombre del personaje"></label>
+        <div class="editor-grid"><label>Esencia<input id="editEssence" type="text" maxlength="60"></label><label>Nivel<input id="editLevel" type="number" min="1" max="999"></label><label>Rango<input id="editRank" type="text" maxlength="60"></label></div>
+        <div class="editor-grid"><label>HP actual<input id="editHp" type="number" min="0"></label><label>HP máximo<input id="editHpMax" type="number" min="1"></label><label>SM actual<input id="editSm" type="number" min="0"></label><label>SM máximo<input id="editSmMax" type="number" min="1"></label></div>
+        <div class="editor-grid"><label>PC<input id="editPc" type="number"></label><label>PD<input id="editPd" type="number"></label><label>Daño<input id="editDamage" type="number"></label></div>
+        <button class="console-save" type="submit">Guardar ficha</button><p id="editorMessage" class="auth-message" role="status"></p>
+      </form>
+    </section>
+  </div>
+</section>
 <section id="sectionView" class="view frame"><div class="view-head"><h2 id="viewTitle">Módulo</h2><button class="back" id="backHome" type="button">← Volver al inicio</button></div><p class="empty" id="viewIntro"></p><div class="placeholder-grid" id="viewCards"></div></section>
-<div class="session-bar"><span id="sessionIdentity"></span><button id="logoutButton" type="button">Cerrar sesión</button><span id="gmOnly" hidden>✧ Consola Master</span></div><footer class="footer"><span>✧</span> Que comience la aventura... <span>✧</span></footer>
+<div class="session-bar"><span id="sessionIdentity"></span><button id="masterConsoleBtn" type="button" hidden>✧ Consola Master</button><button id="logoutButton" type="button">Cerrar sesión</button></div><footer class="footer"><span>✧</span> Que comience la aventura... <span>✧</span></footer>
 </main></div><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script><script src="firebase-config.js"></script><script src="app.js"></script></body></html>

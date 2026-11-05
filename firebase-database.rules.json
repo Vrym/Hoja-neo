@@ -9,13 +9,13 @@
       },
       "characters": {
         "$uid": {
-          ".read": "auth != null && (auth.uid === $uid || root.child('neo/roles').child(auth.uid).child('role').val() === 'gm')",
-          ".write": "auth != null && (auth.uid === $uid || root.child('neo/roles').child(auth.uid).child('role').val() === 'gm')"
+          ".read": "auth != null && (auth.uid === $uid || root.child('neo/roles').child(auth.uid).child('role').val() === 'gm' || root.child('neo/roles').child(auth.uid).child('role').val() === 'admin')",
+          ".write": "auth != null && (auth.uid === $uid || root.child('neo/roles').child(auth.uid).child('role').val() === 'gm' || root.child('neo/roles').child(auth.uid).child('role').val() === 'admin')"
         }
       },
       "shared": {
         ".read": "auth != null",
-        ".write": "auth != null && root.child('neo/roles').child(auth.uid).child('role').val() === 'gm'"
+        ".write": "auth != null && (root.child('neo/roles').child(auth.uid).child('role').val() === 'gm' || root.child('neo/roles').child(auth.uid).child('role').val() === 'admin')"
       }
     }
   }

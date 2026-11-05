@@ -37,3 +37,5 @@ button{font:inherit;color:inherit;cursor:pointer}.app{max-width:1240px;margin:au
 .console-save{padding:11px;border:1px solid var(--gold2);border-radius:5px;background:linear-gradient(145deg,#60472b,#2b2028);color:var(--gold2);font-weight:bold}
 #masterConsoleStatus.error,#editorMessage.error{color:#ff8585}
 @media(max-width:760px){.master-console{margin:14px 12px 0;padding:14px}.master-layout{grid-template-columns:1fr}.master-console-head{align-items:flex-start;flex-direction:column}.master-console-head h2{font-size:21px}.editor-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.sync-status{color:#9edb81;font:11px Arial,sans-serif}.sync-status.error{color:#ff8585}@media(max-width:620px){.session-bar{flex-wrap:wrap;gap:8px;padding:0 12px 12px}.sync-status{order:3;width:100%;text-align:right}}

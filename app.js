@@ -10,7 +10,7 @@ function showApp(){ $("#loginGate").hidden=true; $("#appShell").hidden=false; }
 function updateResource(type,value){if(type==="hp")hp=Math.max(0,Math.min(100,value));else sm=Math.max(0,Math.min(50,value));const val=type==="hp"?hp:sm,max=type==="hp"?100:50;$("#"+type+"Value").textContent=val+" / "+max;$("#"+type+"Fill").style.width=(val/max*100)+"%"}
 function openSection(key){const data=sections[key];if(!data)return;$("#home").hidden=true;$("#sectionView").classList.add("active");$("#viewTitle").textContent=data.title;$("#viewIntro").textContent=data.intro;$("#viewCards").innerHTML=data.cards.map(([title,body])=>'<article class="info-card"><h3>'+title+'</h3><p>'+body+'</p></article>').join("");window.scrollTo({top:0,behavior:"smooth"})}
 function goHome(){$("#sectionView").classList.remove("active");$("#home").hidden=false;window.scrollTo({top:0,behavior:"smooth"})}
-function renderIdentity(user,role){const el=$("#onlineStatus");if(el)el.textContent=role==="gm"?"MASTER ONLINE":"ONLINE";const label=$("#sessionIdentity");if(label)label.textContent=user.email||"Sesión activa";const gm=$("#gmOnly");if(gm)gm.hidden=role!=="gm";}
+function renderIdentity(user,role){const el=$("#onlineStatus");if(el)el.textContent=role==="admin"?"ADMIN ONLINE":role==="gm"?"MASTER ONLINE":"ONLINE";const label=$("#sessionIdentity");if(label)label.textContent=user.email||"Sesión activa";const gm=$("#gmOnly");if(gm)gm.hidden=!["admin","gm"].includes(role);}
 function initFirebase(){
   if(!window.firebase||!window.HOJA_NEO_FIREBASE_CONFIG){setAuthMessage("No se pudo cargar Firebase. Revisá la conexión y recargá.",true);return;}
   try{
@@ -22,7 +22,7 @@ function initFirebase(){
       try{
         const snap=await neo.db.ref("neo/roles/"+user.uid).once("value");
         const roleData=snap.val();
-        if(!roleData||!["gm","player"].includes(roleData.role)){
+        if(!roleData||!["admin","gm","player"].includes(roleData.role)){
           await neo.auth.signOut();showLogin();
           setAuthMessage("La cuenta inició sesión, pero todavía no tiene un rol asignado por el Master. Pedile que habilite tu acceso.",true);return;
         }

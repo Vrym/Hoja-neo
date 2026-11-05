@@ -46,3 +46,17 @@ button{font:inherit;color:inherit;cursor:pointer}.app{max-width:1240px;margin:au
 @media(max-width:420px){.neo-grid{grid-template-columns:1fr}.neo-skill{font-size:11px}.neo-skill select{width:120px}}
 
 .neo-stat{padding:10px;border:1px solid #59452f;border-radius:6px;background:#17131c;color:var(--muted);font:11px Arial,sans-serif}.neo-stat b{display:block;margin-top:5px;color:var(--gold2);font-size:17px}
+
+/* Avatar vivo: reacciones de combate */
+.portrait{transform-origin:50% 78%;transition:filter .12s ease;will-change:transform,filter}
+.portrait.neo-avatar-attack{animation:neoAvatarAttack .72s cubic-bezier(.2,.8,.3,1)}
+.portrait.neo-avatar-crit{animation:neoAvatarCrit .82s ease-out}
+.portrait.neo-avatar-hit{animation:neoAvatarHit .72s ease-in-out;filter:drop-shadow(0 0 13px #ff2838) saturate(1.6)}
+.portrait.neo-avatar-heal{animation:neoAvatarHeal .82s ease-out;filter:drop-shadow(0 0 13px #55ff9a)}
+.neo-hit-flash{animation:neoScreenHit .32s ease-out}
+@keyframes neoAvatarAttack{0%,100%{transform:translateX(0) rotate(0)}25%{transform:translateX(24px) rotate(-8deg)}48%{transform:translateX(-9px) rotate(3deg)}70%{transform:translateX(4px)}}
+@keyframes neoAvatarCrit{0%{transform:scale(1)}25%{transform:scale(1.12) rotate(-7deg);filter:drop-shadow(0 0 12px #f4c34d)}55%{transform:scale(.96) rotate(7deg)}100%{transform:scale(1)}}
+@keyframes neoAvatarHit{0%,100%{transform:translateX(0)}20%{transform:translateX(-15px) rotate(-5deg)}40%{transform:translateX(12px) rotate(4deg)}60%{transform:translateX(-7px)}80%{transform:translateX(3px)}}
+@keyframes neoAvatarHeal{0%,100%{transform:scale(1)}35%{transform:scale(1.07)}65%{transform:scale(.98)}}
+@keyframes neoScreenHit{0%{background-color:#ff203020}100%{background-color:transparent}}
+@media(prefers-reduced-motion:reduce){.portrait.neo-avatar-attack,.portrait.neo-avatar-crit,.portrait.neo-avatar-hit,.portrait.neo-avatar-heal,.neo-hit-flash{animation:none}}

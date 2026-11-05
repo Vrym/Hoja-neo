@@ -5,13 +5,13 @@
 const INTERNAL_LOGIN_DOMAIN="hojaneo-c7718.firebaseapp.com";
 const sections={combat:{title:"Combate",intro:"Prepará tus acciones y consultá tus recursos antes de entrar en batalla.",cards:[["Ataque","Resolvé tus tiradas de ataque con PC y daño."],["Defensa","Consultá PD y prepará tus respuestas."],["Recursos","HP y SM se muestran en tu ficha principal."]]},tech:{title:"Técnicas",intro:"Tus habilidades, poderes y técnicas especiales.",cards:[["Técnicas conocidas","Acá aparecerán tus técnicas y sus requisitos."],["Esencia","Las técnicas podrán organizarse según tu esencia."]]},armory:{title:"Arsenal",intro:"Armas, armaduras y equipo que lleva tu personaje.",cards:[["Arma equipada","Todavía no hay un arma seleccionada."],["Equipamiento","Administrá tus piezas de equipo y sus efectos."]]},treasure:{title:"Tesoro",intro:"Tu riqueza, objetos y hallazgos de aventura.",cards:[["Moneda","Saldo inicial: 0."],["Inventario","Todavía no agregaste objetos."]]},log:{title:"Bitácora",intro:"Misiones, acontecimientos y registros de tu historia.",cards:[["Misiones activas","No hay misiones cargadas todavía."],["Registro","Tus acontecimientos importantes aparecerán acá."]]},profile:{title:"Perfil",intro:"La identidad, historia y características de tu personaje.",cards:[["Identidad","Nombre, esencia, nivel y rango."],["Historia","Agregá trasfondo, descripción y notas personales."]]}};
 const $=s=>document.querySelector(s);
-let hp=100,sm=50;
+let hp=100,sm=50,hpMax=100,smMax=50;
 let neo={app:null,auth:null,db:null,user:null,role:null,username:null,characterRef:null,sharedRef:null};
 function setAuthMessage(message,isError=false){const el=$("#authMessage");if(el){el.textContent=message;el.classList.toggle("error",isError)}}
 function showLogin(){$("#loginGate").hidden=false;$("#appShell").hidden=true;}
 function showApp(){$("#loginGate").hidden=true;$("#appShell").hidden=false;}
 function usernameToEmail(username){return username.trim().toLowerCase()+"@"+INTERNAL_LOGIN_DOMAIN;}
-function updateResource(type,value){if(type==="hp")hp=Math.max(0,Math.min(100,value));else sm=Math.max(0,Math.min(50,value));const val=type==="hp"?hp:sm,max=type==="hp"?100:50;$("#"+type+"Value").textContent=val+" / "+max;$("#"+type+"Fill").style.width=(val/max*100)+"%";}
+function updateResource(type,value){const max=type==="hp"?hpMax:smMax;if(type==="hp")hp=Math.max(0,Math.min(max,value));else sm=Math.max(0,Math.min(max,value));const val=type==="hp"?hp:sm;$("#"+type+"Value").textContent=val+" / "+max;$("#"+type+"Fill").style.width=(val/max*100)+"%";}
 function openSection(key){const data=sections[key];if(!data)return;$("#home").hidden=true;$("#sectionView").classList.add("active");$("#viewTitle").textContent=data.title;$("#viewIntro").textContent=data.intro;$("#viewCards").innerHTML=data.cards.map(([title,body])=>'<article class="info-card"><h3>'+title+'</h3><p>'+body+'</p></article>').join("");window.scrollTo({top:0,behavior:"smooth"});}
 function goHome(){$("#sectionView").classList.remove("active");$("#home").hidden=false;window.scrollTo({top:0,behavior:"smooth"});}
 function renderIdentity(user,role,roleData){const el=$("#onlineStatus");if(el)el.textContent=role==="admin"?"ADMIN ONLINE":role==="gm"?"MASTER ONLINE":"ONLINE";const label=$("#sessionIdentity");if(label)label.textContent="Usuario: "+(roleData.username||neo.username||"Cuenta activa");const gm=$("#masterConsoleBtn");if(gm)gm.hidden=!["admin","gm"].includes(role);}
@@ -42,6 +42,8 @@ function initFirebase(){
   }catch(error){setAuthMessage("Error al iniciar Firebase: "+friendlyError(error),true);}
 }
 function applyCharacterData(data){
+  if(typeof data.hpMax==="number"&&data.hpMax>0)hpMax=data.hpMax;
+  if(typeof data.smMax==="number"&&data.smMax>0)smMax=data.smMax;
   if(typeof data.hp==="number")updateResource("hp",data.hp);
   if(typeof data.sm==="number")updateResource("sm",data.sm);
   if(data.name)$("#characterName").textContent=data.name;

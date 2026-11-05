@@ -55,7 +55,7 @@ async function neoRemoveState(id){const d=neoEnsure();d.combat.states=(d.combat.
 function neoId(){return "n"+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function neoBindForms(){
  const bind=(id,fn)=>{const f=$("#"+id);if(f)f._neoSave=fn;};
- bind("neoEssenceForm",()=>neoSave({essence:{level:Math.max(0,Math.min(13,Number($("#neoEssenceLevel").value)||0)),mode:$("#neoEssenceMode").value}}).then(neoRecalculateCharacter);
+ bind("neoEssenceForm",()=>neoSave({essence:{level:Math.max(0,Math.min(13,Number($("#neoEssenceLevel").value)||0)),mode:$("#neoEssenceMode").value}}).then(neoRecalculateCharacter));
  bind("neoProgressionForm",async()=>{const d=neoEnsure(),archetypes={},aspects={},skills={};document.querySelectorAll("#neoProgressionForm [data-arch]").forEach(x=>archetypes[x.dataset.arch]=Number(x.value));document.querySelectorAll("#neoProgressionForm [data-aspect]").forEach(x=>aspects[x.dataset.aspect]=Number(x.value));document.querySelectorAll("#neoProgressionForm [data-skill]").forEach(x=>skills[x.dataset.skill]=Number(x.value));await neoSave({progression:{archetypes,aspects,skills}});await neoRecalculateCharacter();});
  bind("neoProfileForm",()=>neoSave({profile:{background:$("#neoBackground").value,appearance:$("#neoAppearance").value,notes:$("#neoProfileNotes").value}}));
  bind("neoTechForm",()=>{const d=neoEnsure();d.techniques.push({id:neoId(),name:$("#neoTechName").value.trim(),kind:$("#neoTechKind").value,cost:Number($("#neoTechCost").value)||0,description:$("#neoTechDescription").value});return neoSave({techniques:d.techniques});});

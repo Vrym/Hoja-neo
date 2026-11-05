@@ -76,6 +76,7 @@ function startCharacterSync(){
   });
 }
 function applyCharacterData(data){
+  if(typeof neoModuleData!=="undefined")neoModuleData={...neoModuleData,...data};
   if(typeof data.hpMax==="number"&&data.hpMax>0)hpMax=data.hpMax;
   if(typeof data.smMax==="number"&&data.smMax>0)smMax=data.smMax;
   if(typeof data.hp==="number")updateResource("hp",data.hp);

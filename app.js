@@ -12,7 +12,7 @@ function showLogin(){$("#loginGate").hidden=false;$("#appShell").hidden=true;}
 function showApp(){$("#loginGate").hidden=true;$("#appShell").hidden=false;}
 function usernameToEmail(username){return username.trim().toLowerCase()+"@"+INTERNAL_LOGIN_DOMAIN;}
 function updateResource(type,value){const max=type==="hp"?hpMax:smMax;if(type==="hp")hp=Math.max(0,Math.min(max,value));else sm=Math.max(0,Math.min(max,value));const val=type==="hp"?hp:sm;$("#"+type+"Value").textContent=val+" / "+max;$("#"+type+"Fill").style.width=(val/max*100)+"%";}
-function openSection(key){const data=sections[key];if(!data)return;$("#home").hidden=true;$("#sectionView").classList.add("active");$("#viewTitle").textContent=data.title;$("#viewIntro").textContent=data.intro;$("#viewCards").innerHTML=data.cards.map(([title,body])=>'<article class="info-card"><h3>'+title+'</h3><p>'+body+'</p></article>').join("");window.scrollTo({top:0,behavior:"smooth"});}
+function openSection(key){if(!sections[key])return;$("#home").hidden=true;$("#sectionView").classList.add("active");$("#viewTitle").textContent=sections[key].title;renderNeoModule(key);window.scrollTo({top:0,behavior:"smooth"});}
 function goHome(){$("#sectionView").classList.remove("active");$("#home").hidden=false;window.scrollTo({top:0,behavior:"smooth"});}
 function renderIdentity(user,role,roleData){const el=$("#onlineStatus");if(el)el.textContent=role==="admin"?"ADMIN ONLINE":role==="gm"?"MASTER ONLINE":"ONLINE";const label=$("#sessionIdentity");if(label)label.textContent="Usuario: "+(roleData.username||neo.username||"Cuenta activa");const gm=$("#masterConsoleBtn");if(gm)gm.hidden=!["admin","gm"].includes(role);}
 function initFirebase(){

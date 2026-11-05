@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#100d16"><meta name="description" content="Hoja de personaje Requiem - Hoja Neo">
+<title>REQUIEM · Hoja Bizarra</title><link rel="stylesheet" href="style.css">
+</head>
+<body><main class="app">
+<header class="masthead"><div class="brand"><div class="sigil">✥</div><div><h1>REQUIEM</h1><small>HOJA DE PERSONAJE</small></div></div><div class="online">ONLINE</div></header>
+<div id="home">
+<section class="hero frame">
+<div class="portrait" aria-label="Retrato ilustrado de personaje">
+<svg viewBox="0 0 220 270" role="img" aria-label="Pequeño aventurero de fantasía estilo chibi">
+<defs><radialGradient id="halo"><stop stop-color="#c7a0d2" stop-opacity=".5"/><stop offset="1" stop-color="#c7a0d2" stop-opacity="0"/></radialGradient><linearGradient id="cloak" x2="1" y2="1"><stop stop-color="#65516d"/><stop offset="1" stop-color="#211a2c"/></linearGradient></defs>
+<circle cx="110" cy="112" r="100" fill="url(#halo)"/><circle cx="110" cy="112" r="76" fill="none" stroke="#c6a76b" stroke-opacity=".35" stroke-width="2"/><path d="M43 258 Q53 171 85 158 L135 158 Q171 184 181 258Z" fill="url(#cloak)" stroke="#b78b4d" stroke-width="2"/><path d="M80 173 L110 205 L140 173 L151 258 L69 258Z" fill="#29202e" stroke="#9b784b" stroke-width="2"/><path d="M84 165 L72 216 L48 252 L70 258 L103 208Z" fill="#49374e"/><path d="M136 165 L151 217 L177 252 L155 258 L117 207Z" fill="#49374e"/><path d="M78 95 Q64 44 108 37 Q160 38 153 104 L144 147 L77 143Z" fill="#241d28"/><path d="M75 90 Q52 59 78 42 Q88 14 128 29 Q160 30 158 70 L143 58 L132 43 Q112 67 76 69Z" fill="#302632" stroke="#17131d" stroke-width="3"/><ellipse cx="111" cy="99" rx="39" ry="47" fill="#e5bfa0" stroke="#33232a" stroke-width="3"/><path d="M73 92 Q82 52 118 51 Q146 51 151 84 Q131 72 115 68 Q99 85 73 92Z" fill="#302632"/><path d="M79 98 Q91 88 103 98" stroke="#30202a" stroke-width="4" fill="none"/><path d="M120 98 Q133 88 145 98" stroke="#30202a" stroke-width="4" fill="none"/><ellipse cx="94" cy="108" rx="6" ry="9" fill="#342c48"/><ellipse cx="132" cy="108" rx="6" ry="9" fill="#342c48"/><circle cx="96" cy="105" r="2" fill="white"/><circle cx="134" cy="105" r="2" fill="white"/><path d="M105 128 Q112 134 120 127" stroke="#9c5f5b" stroke-width="2" fill="none"/><path d="M76 139 Q109 154 147 137 L153 170 Q111 190 69 169Z" fill="#33283b" stroke="#b78b4d" stroke-width="2"/><path d="M92 168 L109 185 L128 168" fill="none" stroke="#d0aa68" stroke-width="4"/><path d="M159 184 L191 256" stroke="#b6b1bd" stroke-width="5"/><path d="M153 179 L165 175 L171 188 L159 194Z" fill="#c69b54"/><path d="M184 244 L201 263" stroke="#c69b54" stroke-width="7" stroke-linecap="round"/>
+</svg></div>
+<div class="character"><h2>✧ PERSONAJE ✧</h2><div class="char-name">Nombre del personaje</div><div class="subline">Esencia · Nivel · Rango</div>
+<div class="resource"><div class="symbol">❤️</div><div><strong>HP <span id="hpValue">100 / 100</span></strong><div class="bar"><div class="fill hp" id="hpFill" style="width:100%"></div></div><div class="resource-tools"><button class="tiny" data-adjust="hp:-10">−10</button><button class="tiny" data-adjust="hp:10">+10</button></div></div></div>
+<div class="resource"><div class="symbol">💧</div><div><strong>SM <span id="smValue">50 / 50</span></strong><div class="bar"><div class="fill sm" id="smFill" style="width:100%"></div></div><div class="resource-tools"><button class="tiny" data-adjust="sm:-5">−5</button><button class="tiny" data-adjust="sm:5">+5</button></div></div></div>
+<div class="stats"><div class="stat"><b>10</b><span>⚔ PC</span></div><div class="stat"><b>10</b><span>🛡 PD</span></div><div class="stat"><b>5</b><span>✹ DAÑO</span></div></div></div>
+<aside class="states"><h2 class="section-title">✧ ESTADOS ✧</h2><p class="empty">No hay estados activos.<br>Los efectos y condiciones aparecerán acá.</p><button class="outline-btn" id="statesButton" type="button">Ver estados ▴</button></aside>
+</section>
+<nav class="module-grid" aria-label="Módulos de personaje">
+<button class="module combat" data-section="combat"><span class="ico">⚔</span><strong>Combate</strong><small>Atacar, defender y más...</small></button>
+<button class="module tech" data-section="tech"><span class="ico">✧</span><strong>Técnicas</strong><small>Habilidades y poderes...</small></button>
+<button class="module armory" data-section="armory"><span class="ico">♜</span><strong>Arsenal</strong><small>Armas y equipamiento...</small></button>
+<button class="module treasure" data-section="treasure"><span class="ico">♙</span><strong>Tesoro</strong><small>Tu riqueza y objetos...</small></button>
+<button class="module log" data-section="log"><span class="ico">📖</span><strong>Bitácora</strong><small>Misiones y registros...</small></button>
+<button class="module profile" data-section="profile"><span class="ico">♧</span><strong>Perfil</strong><small>Tu historia...</small></button>
+</nav></div>
+<section id="sectionView" class="view frame"><div class="view-head"><h2 id="viewTitle">Módulo</h2><button class="back" id="backHome" type="button">← Volver al inicio</button></div><p class="empty" id="viewIntro"></p><div class="placeholder-grid" id="viewCards"></div></section>
+<footer class="footer"><span>✧</span> Que comience la aventura... <span>✧</span></footer>
+</main><script src="app.js"></script></body></html>

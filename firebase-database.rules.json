@@ -1,0 +1,22 @@
+{
+  "rules": {
+    "neo": {
+      "roles": {
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": false
+        }
+      },
+      "characters": {
+        "$uid": {
+          ".read": "auth != null && (auth.uid === $uid || root.child('neo/roles').child(auth.uid).child('role').val() === 'gm')",
+          ".write": "auth != null && (auth.uid === $uid || root.child('neo/roles').child(auth.uid).child('role').val() === 'gm')"
+        }
+      },
+      "shared": {
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('neo/roles').child(auth.uid).child('role').val() === 'gm'"
+      }
+    }
+  }
+}

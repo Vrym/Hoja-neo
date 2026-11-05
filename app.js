@@ -73,6 +73,10 @@ $("#backHome").addEventListener("click",goHome);
 
 /* Consola del Master — roster y edición segura de fichas */
 let masterRolesCache={};
+let masterCharactersCache={};
+let masterRolesListener=null;
+const masterCharacterListeners={};
+let activeEditorUid=null;
 function setConsoleStatus(message,isError=false){const el=$("#masterConsoleStatus");if(el){el.textContent=message;el.classList.toggle("error",isError);}}
 function setEditorMessage(message,isError=false){const el=$("#editorMessage");if(el){el.textContent=message;el.classList.toggle("error",isError);}}
 function openMasterConsole(){if(!["admin","gm"].includes(neo.role))return;$("#home").hidden=true;$("#sectionView").classList.remove("active");$("#masterConsole").hidden=false;loadMasterRoster();window.scrollTo({top:0,behavior:"smooth"});}
@@ -82,40 +86,72 @@ function setupMasterConsole(){
   $("#closeMasterConsole").addEventListener("click",closeMasterConsole);
   $("#refreshRoster").addEventListener("click",loadMasterRoster);
   $("#characterEditor").addEventListener("submit",saveMasterCharacter);
+  $("#characterEditor").addEventListener("input",()=>{$("#characterEditor").dataset.dirty="true";});
 }
-async function loadMasterRoster(){
+function loadMasterRoster(){
   if(!["admin","gm"].includes(neo.role)||!neo.db)return;
-  setConsoleStatus("Consultando integrantes y fichas…");
-  const roster=$("#masterRoster");roster.innerHTML='<p class="empty">Cargando jugadores…</p>';
-  try{
-    const rolesSnap=await neo.db.ref("neo/roles").once("value");
-    masterRolesCache=rolesSnap.val()||{};
-    const players=Object.entries(masterRolesCache).filter(([,v])=>v&&v.role==="player");
-    if(!players.length){roster.innerHTML='<p class="empty">Todavía no hay jugadores asignados.</p>';setConsoleStatus("No hay jugadores registrados.");return;}
-    const cards=await Promise.all(players.map(async([uid,info])=>{
-      let ch={};try{const snap=await neo.db.ref("neo/characters/"+uid).once("value");ch=snap.val()||{};}catch(e){}
-      return {uid,username:info.username||"Jugador",character:ch};
-    }));
-    roster.innerHTML=cards.map(({uid,username,character})=>{
-      const safeName=escapeHtml(character.name||"Personaje sin crear");
-      const hpText=Number.isFinite(Number(character.hp))?Number(character.hp)+" / "+(character.hpMax||100):"—";
-      const smText=Number.isFinite(Number(character.sm))?Number(character.sm)+" / "+(character.smMax||50):"—";
-      return '<article class="roster-card"><div><strong>'+escapeHtml(username)+'</strong><span>'+safeName+'</span><small>HP '+hpText+' · SM '+smText+'</small></div><button type="button" class="console-small-btn" data-edit-uid="'+uid+'">Editar</button></article>';
-    }).join("");
-    roster.querySelectorAll("[data-edit-uid]").forEach(btn=>btn.addEventListener("click",()=>openCharacterEditor(btn.dataset.editUid)));
-    setConsoleStatus(cards.length+" jugadores conectados a la mesa.");
-  }catch(error){roster.innerHTML='<p class="empty">No se pudo leer el grupo. Revisá las reglas de lectura de roles.</p>';setConsoleStatus("Error al cargar el grupo: "+friendlyError(error),true);}
+  setConsoleStatus("Sincronizando integrantes y fichas…");
+  const roster=$("#masterRoster");
+  if(!masterRolesListener){
+    masterRolesListener=neo.db.ref("neo/roles");
+    masterRolesListener.on("value",snapshot=>{
+      masterRolesCache=snapshot.val()||{};
+      syncMasterCharacterListeners();
+      renderMasterRoster();
+    },error=>{
+      roster.innerHTML='<p class="empty">No se pudo leer el grupo. Revisá las reglas de lectura de roles.</p>';
+      setConsoleStatus("Error al cargar el grupo: "+friendlyError(error),true);
+    });
+  }else renderMasterRoster();
+}
+function syncMasterCharacterListeners(){
+  const playerUids=new Set(Object.entries(masterRolesCache).filter(([,v])=>v&&v.role==="player").map(([uid])=>uid));
+  Object.keys(masterCharacterListeners).forEach(uid=>{
+    if(!playerUids.has(uid)){
+      neo.db.ref("neo/characters/"+uid).off("value",masterCharacterListeners[uid]);
+      delete masterCharacterListeners[uid];delete masterCharactersCache[uid];
+    }
+  });
+  playerUids.forEach(uid=>{
+    if(masterCharacterListeners[uid])return;
+    const ref=neo.db.ref("neo/characters/"+uid);
+    const listener=snapshot=>{
+      masterCharactersCache[uid]=snapshot.val()||{};
+      renderMasterRoster();
+      if(activeEditorUid===uid&&!$("#characterEditor").dataset.dirty)fillCharacterEditor(uid,masterCharactersCache[uid],masterRolesCache[uid]);
+    };
+    masterCharacterListeners[uid]=listener;
+    ref.on("value",listener,error=>setConsoleStatus("No se pudo sincronizar una ficha: "+friendlyError(error),true));
+  });
+}
+function renderMasterRoster(){
+  const roster=$("#masterRoster");if(!roster)return;
+  const players=Object.entries(masterRolesCache).filter(([,v])=>v&&v.role==="player");
+  if(!players.length){roster.innerHTML='<p class="empty">Todavía no hay jugadores asignados.</p>';setConsoleStatus("No hay jugadores registrados.");return;}
+  roster.innerHTML=players.map(([uid,info])=>{
+    const character=masterCharactersCache[uid]||{};
+    const safeName=escapeHtml(character.name||"Personaje sin crear");
+    const hpText=Number.isFinite(Number(character.hp))?Number(character.hp)+" / "+(character.hpMax||100):"—";
+    const smText=Number.isFinite(Number(character.sm))?Number(character.sm)+" / "+(character.smMax||50):"—";
+    return '<article class="roster-card"><div><strong>'+escapeHtml(info.username||"Jugador")+'</strong><span>'+safeName+'</span><small>HP '+hpText+' · SM '+smText+'</small></div><button type="button" class="console-small-btn" data-edit-uid="'+uid+'">Editar</button></article>';
+  }).join("");
+  roster.querySelectorAll("[data-edit-uid]").forEach(btn=>btn.addEventListener("click",()=>openCharacterEditor(btn.dataset.editUid)));
+  setConsoleStatus(players.length+" jugadores sincronizados en tiempo real.");
 }
 function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));}
+function fillCharacterEditor(uid,c,info){
+  $("#editUid").value=uid;$("#editUsername").value=(info&&info.username)||"Jugador";
+  $("#editName").value=c.name||"";$("#editEssence").value=c.essence||"";$("#editLevel").value=c.level??1;$("#editRank").value=c.rank||"";
+  $("#editHp").value=c.hp??100;$("#editHpMax").value=c.hpMax??100;$("#editSm").value=c.sm??50;$("#editSmMax").value=c.smMax??50;
+  $("#editPc").value=c.pc??10;$("#editPd").value=c.pd??10;$("#editDamage").value=c.damage??5;
+}
 async function openCharacterEditor(uid){
   const info=masterRolesCache[uid];if(!info||info.role!=="player")return;
   try{
     const snap=await neo.db.ref("neo/characters/"+uid).once("value"),c=snap.val()||{};
-    $("#editUid").value=uid;$("#editUsername").value=info.username||"Jugador";
-    $("#editName").value=c.name||"";$("#editEssence").value=c.essence||"";$("#editLevel").value=c.level??1;$("#editRank").value=c.rank||"";
-    $("#editHp").value=c.hp??100;$("#editHpMax").value=c.hpMax??100;$("#editSm").value=c.sm??50;$("#editSmMax").value=c.smMax??50;
-    $("#editPc").value=c.pc??10;$("#editPd").value=c.pd??10;$("#editDamage").value=c.damage??5;
-    $("#editorHint").hidden=true;$("#characterEditor").hidden=false;setEditorMessage(""); 
+    activeEditorUid=uid;$("#characterEditor").dataset.dirty="";
+    fillCharacterEditor(uid,c,info);
+    $("#editorHint").hidden=true;$("#characterEditor").hidden=false;setEditorMessage("");
   }catch(error){setConsoleStatus("No se pudo abrir la ficha: "+friendlyError(error),true);}
 }
 async function saveMasterCharacter(event){
@@ -124,7 +160,7 @@ async function saveMasterCharacter(event){
   const values={hp:Number($("#editHp").value),hpMax:Number($("#editHpMax").value),sm:Number($("#editSm").value),smMax:Number($("#editSmMax").value),level:Number($("#editLevel").value),pc:Number($("#editPc").value),pd:Number($("#editPd").value),damage:Number($("#editDamage").value)};
   if(Object.values(values).some(v=>!Number.isFinite(v))||values.hp<0||values.hpMax<1||values.hp>values.hpMax||values.sm<0||values.smMax<1||values.sm>values.smMax||values.level<1){setEditorMessage("Revisá los valores: HP y SM deben estar dentro de sus máximos y el nivel debe ser al menos 1.",true);return;}
   const data={name:$("#editName").value.trim(),essence:$("#editEssence").value.trim(),level:values.level,rank:$("#editRank").value.trim(),hp:values.hp,hpMax:values.hpMax,sm:values.sm,smMax:values.smMax,pc:values.pc,pd:values.pd,damage:values.damage};
-  try{await neo.db.ref("neo/characters/"+uid).update(data);setEditorMessage("Ficha guardada correctamente.");setConsoleStatus("Cambios guardados para "+(masterRolesCache[uid].username||"el jugador")+".");await loadMasterRoster();}
+  try{await neo.db.ref("neo/characters/"+uid).update(data);$("#characterEditor").dataset.dirty="";setEditorMessage("Ficha guardada correctamente.");setConsoleStatus("Cambios guardados y sincronizados para "+(masterRolesCache[uid].username||"el jugador")+".");masterCharactersCache[uid]=data;renderMasterRoster();}
   catch(error){setEditorMessage("No se pudo guardar: "+friendlyError(error),true);}
 }
 

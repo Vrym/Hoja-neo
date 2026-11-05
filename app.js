@@ -36,6 +36,10 @@ function initFirebase(){
         if(["admin","gm"].includes(neo.role)) setupMasterConsole();
         const characterSnap=await neo.characterRef.once("value");
         if(characterSnap.exists())applyCharacterData(characterSnap.val());
+        // Mantiene la ficha sincronizada en tiempo real con los cambios del Master.
+        neo.characterRef.on("value",snapshot=>{
+          if(snapshot.exists())applyCharacterData(snapshot.val());
+        },error=>setAuthMessage("No se pudieron sincronizar los cambios: "+friendlyError(error),true));
         renderIdentity(user,neo.role,roleData);showApp();setAuthMessage("");
       }catch(error){showLogin();setAuthMessage("No se pudo validar el acceso: "+friendlyError(error),true);}
     });

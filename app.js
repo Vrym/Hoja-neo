@@ -36,14 +36,44 @@ function initFirebase(){
         if(["admin","gm"].includes(neo.role)) setupMasterConsole();
         const characterSnap=await neo.characterRef.once("value");
         if(characterSnap.exists())applyCharacterData(characterSnap.val());
-        // Mantiene la ficha sincronizada en tiempo real con los cambios del Master.
-        neo.characterRef.on("value",snapshot=>{
-          if(snapshot.exists())applyCharacterData(snapshot.val());
-        },error=>setAuthMessage("No se pudieron sincronizar los cambios: "+friendlyError(error),true));
         renderIdentity(user,neo.role,roleData);showApp();setAuthMessage("");
+        startCharacterSync();
       }catch(error){showLogin();setAuthMessage("No se pudo validar el acceso: "+friendlyError(error),true);}
     });
   }catch(error){setAuthMessage("Error al iniciar Firebase: "+friendlyError(error),true);}
+}
+function setSyncStatus(message,isError=false){
+  const el=$("#syncStatus");
+  if(!el)return;
+  el.textContent=message;
+  el.classList.toggle("error",isError);
+}
+function startCharacterSync(){
+  if(!neo.characterRef)return;
+  setSyncStatus("Conectando ficha…");
+  // Suscripción persistente: cada modificación del Master debe actualizar esta hoja.
+  neo.characterRef.off("value");
+  neo.characterRef.on("value",snapshot=>{
+    if(snapshot.exists()){
+      applyCharacterData(snapshot.val());
+      setSyncStatus("Ficha sincronizada");
+    }else setSyncStatus("Ficha todavía sin datos");
+  },error=>{
+    setSyncStatus("Error de sincronización",true);
+    console.error("Hoja Neo: error escuchando la ficha",error);
+  });
+  // Si el navegador pierde y recupera conexión, revalidamos la ficha actual.
+  neo.db.ref(".info/connected").on("value",snapshot=>{
+    if(snapshot.val()===true){
+      neo.characterRef.once("value").then(current=>{
+        if(current.exists())applyCharacterData(current.val());
+        setSyncStatus("Ficha sincronizada");
+      }).catch(error=>{
+        setSyncStatus("Sin conexión a la ficha",true);
+        console.error("Hoja Neo: no se pudo revalidar la ficha",error);
+      });
+    }else setSyncStatus("Reconectando…");
+  });
 }
 function applyCharacterData(data){
   if(typeof data.hpMax==="number"&&data.hpMax>0)hpMax=data.hpMax;

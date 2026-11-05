@@ -86,6 +86,12 @@ function applyCharacterData(data){
   if(data.pc!=null)$("#pcValue").textContent=data.pc;
   if(data.pd!=null)$("#pdValue").textContent=data.pd;
   if(data.damage!=null)$("#damageValue").textContent=data.damage;
+  // Si la ficha cambia desde Master, refrescar el módulo abierto sin exigir F5.
+  const current=$("#sectionView");
+  if(current?.classList.contains("active")&&typeof renderNeoModule==="function"){
+    const key=Object.keys(sections).find(k=>sections[k].title===$("#viewTitle").textContent);
+    if(key)renderNeoModule(key);
+  }
 }
 function friendlyError(error){const code=error&&error.code||"";const messages={"auth/invalid-credential":"Usuario o contraseña incorrectos.","auth/user-not-found":"Usuario o contraseña incorrectos.","auth/wrong-password":"Usuario o contraseña incorrectos.","auth/invalid-email":"El usuario ingresado no es válido.","auth/too-many-requests":"Demasiados intentos. Esperá un momento.","auth/network-request-failed":"No se pudo conectar. Revisá tu internet."};return messages[code]||((error&&error.message)||"Error desconocido.");}
 $("#loginForm").addEventListener("submit",async event=>{

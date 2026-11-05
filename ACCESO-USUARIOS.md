@@ -4,9 +4,9 @@ La pantalla de Hoja Neo pide un **nombre de usuario** y una **contraseña**. Los
 
 ## Cómo funciona
 
-Firebase Authentication utiliza internamente el proveedor Email/Password. Para no pedir correos personales, Hoja Neo transforma cada nombre de usuario en un alias técnico con el dominio reservado `accounts.hojaneo.invalid`. Ese alias no es una casilla de correo y no se usa para enviar mensajes.
+Firebase Authentication utiliza internamente el proveedor Email/Password. Para no pedir correos personales, Hoja Neo transforma cada nombre de usuario en un alias técnico con el dominio reservado `hojaneo-c7718.firebaseapp.com`. Ese alias no es una casilla de correo y no se usa para enviar mensajes.
 
-La correspondencia es fija: por ejemplo, el usuario `facu` inicia sesión internamente como `facu@accounts.hojaneo.invalid`. En la pantalla y en la sesión se muestra solamente el nombre de usuario.
+La correspondencia es fija: por ejemplo, el usuario `facu` inicia sesión internamente como `facu@hojaneo-c7718.firebaseapp.com`. En la pantalla y en la sesión se muestra solamente el nombre de usuario.
 
 ## Crear las cinco cuentas
 
@@ -14,11 +14,11 @@ En Firebase Console → Authentication → Users → Add user, crear:
 
 | Usuario que escribirá | Alias técnico que se carga en Firebase | Rol |
 |---|---|---|
-| `admin` | `admin@accounts.hojaneo.invalid` | `admin` |
-| `facu` | `facu@accounts.hojaneo.invalid` | `gm` |
-| `seba` | `seba@accounts.hojaneo.invalid` | `player` |
-| `mica` | `mica@accounts.hojaneo.invalid` | `player` |
-| `ivan` | `ivan@accounts.hojaneo.invalid` | `player` |
+| `admin` | `admin@hojaneo-c7718.firebaseapp.com` | `admin` |
+| `facu` | `facu@hojaneo-c7718.firebaseapp.com` | `gm` |
+| `seba` | `seba@hojaneo-c7718.firebaseapp.com` | `player` |
+| `mica` | `mica@hojaneo-c7718.firebaseapp.com` | `player` |
+| `ivan` | `ivan@hojaneo-c7718.firebaseapp.com` | `player` |
 
 Asignar una contraseña segura y distinta a cada cuenta. No guardar contraseñas en Realtime Database ni compartirlas en el repositorio.
 

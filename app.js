@@ -6,6 +6,7 @@ const INTERNAL_LOGIN_DOMAIN="hojaneo-c7718.firebaseapp.com";
 const sections={combat:{title:"Combate",intro:"Prepará tus acciones y consultá tus recursos antes de entrar en batalla.",cards:[["Ataque","Resolvé tus tiradas de ataque con PC y daño."],["Defensa","Consultá PD y prepará tus respuestas."],["Recursos","HP y SM se muestran en tu ficha principal."]]},tech:{title:"Técnicas",intro:"Tus habilidades, poderes y técnicas especiales.",cards:[["Técnicas conocidas","Acá aparecerán tus técnicas y sus requisitos."],["Esencia","Las técnicas podrán organizarse según tu esencia."]]},armory:{title:"Arsenal",intro:"Armas, armaduras y equipo que lleva tu personaje.",cards:[["Arma equipada","Todavía no hay un arma seleccionada."],["Equipamiento","Administrá tus piezas de equipo y sus efectos."]]},treasure:{title:"Tesoro",intro:"Tu riqueza, objetos y hallazgos de aventura.",cards:[["Moneda","Saldo inicial: 0."],["Inventario","Todavía no agregaste objetos."]]},log:{title:"Bitácora",intro:"Misiones, acontecimientos y registros de tu historia.",cards:[["Misiones activas","No hay misiones cargadas todavía."],["Registro","Tus acontecimientos importantes aparecerán acá."]]},profile:{title:"Perfil",intro:"La identidad, historia y características de tu personaje.",cards:[["Identidad","Nombre, esencia, nivel y rango."],["Historia","Agregá trasfondo, descripción y notas personales."]]}};
 const $=s=>document.querySelector(s);
 let hp=100,sm=50,hpMax=100,smMax=50;
+let neoSharedCombatRef=null;
 let neo={app:null,auth:null,db:null,user:null,role:null,username:null,characterRef:null,sharedRef:null};
 function setAuthMessage(message,isError=false){const el=$("#authMessage");if(el){el.textContent=message;el.classList.toggle("error",isError)}}
 function showLogin(){$("#loginGate").hidden=false;$("#appShell").hidden=true;}
@@ -33,6 +34,9 @@ function initFirebase(){
         neo.role=roleData.role;neo.username=roleData.username||"";
         neo.characterRef=neo.db.ref("neo/characters/"+user.uid);
         neo.sharedRef=neo.db.ref("neo/shared");
+        neoSharedCombatRef=neo.sharedRef.child("combat");
+        neoSharedCombatRef.off("value");
+        neoSharedCombatRef.on("value",snap=>{window.neoSharedCombatData=snap.val()||{active:false,round:1,order:[],current:0};if($("#sectionView").classList.contains("active")&&$("#viewTitle").textContent==="Combate")renderNeoModule("combat");});
         if(["admin","gm"].includes(neo.role)) setupMasterConsole();
         const characterSnap=await neo.characterRef.once("value");
         if(characterSnap.exists())applyCharacterData(characterSnap.val());

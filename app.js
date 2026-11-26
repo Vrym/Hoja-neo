@@ -203,10 +203,15 @@ async function processTechniqueRequests(uid,character){
       if(!battle.active||!actor||actor.uid!==uid)throw new Error("No es el turno del jugador.");
       if(fresh?.type==="attack"){if((Number(combat.turnActions)||0)<1)throw new Error("No se reservó la acción principal.");}else{const techForAction=(character.techniques||[]).find(t=>t&&String(t.id)===String(fresh?.techniqueId)&&t.learned),quick=(techForAction?.actionKind||techForAction?.kind)==="quick";if((quick?Number(combat.quickActions)||0:Number(combat.turnActions)||0)<1)throw new Error("No se reservó la acción correspondiente.");}
       if(fresh?.type==="attack"){
-        const attack=fresh.attack||{},damage=Math.max(0,Math.min(9999,Number(attack.damage)||0));
-        if(!Number.isFinite(Number(attack.damage))||Number(attack.d20)<1||Number(attack.d20)>20||Number(attack.d6)<1||Number(attack.d6)>6)throw new Error("La tirada de ataque no es válida.");
-        await neo.sharedRef.child("combat/lastAttack").set({damage,attacker:uid,name:String(attack.name||character.profile?.name||character.name||"Jugador").slice(0,80),critical:attack.critical===true,at:Number(attack.at)||Date.now(),requestId:req.requestId});effectApplied=true;
-        resultText=String(attack.text||((attack.name||"Jugador")+" · Ataque autorizado por Master · daño "+damage+".")).slice(0,300);
+        const d6=Math.floor(Math.random()*6)+1,d20=Math.floor(Math.random()*20)+1;
+        const totals=neoProgressionTotals(character),pc=Number(character.pc??character.pcBase??10),crit=Number(totals.crit)||0;
+        const isCrit=d20+crit>=20,weapon=(character.inventory||[]).find(x=>x.equipped&&String(x.kind||"").toLowerCase()==="arma");
+        const multiplier=neoWeaponCritMultiplier(weapon),baseDamage=Number(character.damage)||Number(character.damageBase)||0;
+        const rawDamage=d6+baseDamage,damage=Math.max(0,Math.min(9999,isCrit?Math.round(rawDamage*multiplier):rawDamage));
+        const name=String(character.profile?.name||character.name||"Jugador").slice(0,80);
+        const rollText="Ataque · D6 "+d6+" · D20 "+d20+" + PC "+pc+" = "+(d20+pc)+" · Crítico "+(d20+crit)+"/20"+(isCrit?" ⭐ CRÍTICO":d20===1?" · Fallo crítico":"")+" · Daño "+damage+(isCrit?" · Multiplicador ×"+multiplier:"");
+        await neo.sharedRef.child("combat/lastAttack").set({damage,attacker:uid,name,critical:isCrit,at:Date.now(),requestId:req.requestId,d6,d20,pc,crit,rollText});effectApplied=true;
+        resultText=name+" · "+rollText;
       }else{
         const technique=(character.techniques||[]).find(t=>t&&String(t.id)===String(fresh?.techniqueId)&&t.learned);
         const level=Math.max(1,Math.min(3,Number(technique?.learnedLevel||1)));

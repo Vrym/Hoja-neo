@@ -206,7 +206,7 @@ async function processTechniqueRequests(uid,character){
         const attack=fresh.attack||{},damage=Math.max(0,Math.min(9999,Number(attack.damage)||0));
         if(!Number.isFinite(Number(attack.damage))||Number(attack.d20)<1||Number(attack.d20)>20||Number(attack.d6)<1||Number(attack.d6)>6)throw new Error("La tirada de ataque no es válida.");
         await neo.sharedRef.child("combat/lastAttack").set({damage,attacker:uid,name:String(attack.name||character.profile?.name||character.name||"Jugador").slice(0,80),critical:attack.critical===true,at:Number(attack.at)||Date.now(),requestId:req.requestId});
-        resultText=String(attack.name||"Jugador")+" · Ataque autorizado por Master · daño "+damage+".";
+        resultText=String(attack.text||((attack.name||"Jugador")+" · Ataque autorizado por Master · daño "+damage+".")).slice(0,300);
       }else{
         const technique=(character.techniques||[]).find(t=>t&&String(t.id)===String(fresh?.techniqueId)&&t.learned);
         const level=Math.max(1,Math.min(3,Number(technique?.learnedLevel||1)));

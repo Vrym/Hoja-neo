@@ -223,15 +223,28 @@ async function processTechniqueRequests(uid,character){
       }
       const histRef=neo.sharedRef.child("combat/history");
       await histRef.transaction(h=>{const arr=Array.isArray(h)?h:[];return [...arr,{id:req.requestId,at:Date.now(),text:resultText}].slice(-60);});
-    }catch(error){resultText="Técnica sin efecto: "+(error?.message||"Error de autorización o resolución.");}
+    }catch(error){
+      resultText="Técnica sin efecto: "+(error?.message||"Error de autorización o resolución.");
+      try{
+        const latest=(await neo.db.ref("neo/characters/"+uid).once("value")).val()||{},tech=(latest.techniques||[]).find(t=>t&&String(t.id)===String(req.techniqueId)&&t.learned);
+        if(tech){
+          const lvl=Math.max(1,Math.min(3,Number(tech.learnedLevel||1))),cfg=neoTechniqueConfig(tech,lvl),quick=(tech.actionKind||tech.kind)==="quick";
+          await neo.db.ref("neo/characters/"+uid).transaction(ch=>{
+            if(!ch)return ch;
+            const sm=Math.max(0,Number(ch.sm)||0),smMax=Math.max(0,Number(ch.smMax)||50),combat={...(ch.combat||{})};
+            const key=quick?"quickActions":"turnActions";combat[key]=Math.max(0,(Number(combat[key])||0)-1);
+            return {...ch,sm:Math.min(smMax,sm+Math.max(0,Number(cfg.cost)||0)),combat};
+          });
+        }
+      }catch(refundError){resultText+=" · No se pudo devolver el coste automáticamente";}
+    }
     await requestRef.transaction(list=>{
       if(!Array.isArray(list))return list;
       const item=list.find(x=>x&&x.requestId===req.requestId);
       if(item&&item.status==="processing"){item.status=resultText.startsWith("Técnica sin efecto")?"failed":"completed";item.result=resultText;item.finishedAt=Date.now();}
       return list;
     });
-    const hist=[...(character.combat?.history||[]),{id:req.requestId,at:Date.now(),text:resultText}].slice(-60);
-    await neo.db.ref("neo/characters/"+uid+"/combat/history").set(hist);
+    // Result is logged only in shared combat history to avoid duplicate entries.
   }
 }
 function renderMasterRoster(){

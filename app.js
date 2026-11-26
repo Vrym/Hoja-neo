@@ -37,7 +37,7 @@ function initFirebase(){
         neoSharedCombatRef=neo.sharedRef.child("combat");
         neoSharedCombatRef.off("value");
         neoSharedCombatRef.on("value",snap=>{window.neoSharedCombatData=snap.val()||{active:false,round:1,order:[],current:0};if($("#sectionView").classList.contains("active")&&$("#viewTitle").textContent==="Combate")renderNeoModule("combat");});
-        if(["admin","gm"].includes(neo.role)) setupMasterConsole();
+        if(["admin","gm"].includes(neo.role)){setupMasterConsole();setupTechniqueRequestListeners();}
         const characterSnap=await neo.characterRef.once("value");
         if(characterSnap.exists())applyCharacterData(characterSnap.val());
         renderIdentity(user,neo.role,roleData);showApp();setAuthMessage("");
@@ -164,6 +164,23 @@ function syncMasterCharacterListeners(){
     };
     masterCharacterListeners[uid]=listener;
     ref.on("value",listener,error=>setConsoleStatus("No se pudo sincronizar una ficha: "+friendlyError(error),true));
+  });
+}
+let techniqueRequestRolesListener=null;
+const techniqueRequestCharacterListeners={};
+function setupTechniqueRequestListeners(){
+  if(!["gm","admin"].includes(neo.role)||!neo.db||techniqueRequestRolesListener)return;
+  techniqueRequestRolesListener=neo.db.ref("neo/roles");
+  techniqueRequestRolesListener.on("value",snapshot=>{
+    const roles=snapshot.val()||{},players=new Set(Object.entries(roles).filter(([,v])=>v&&v.role==="player").map(([uid])=>uid));
+    Object.keys(techniqueRequestCharacterListeners).forEach(uid=>{
+      if(!players.has(uid)){neo.db.ref("neo/characters/"+uid).off("value",techniqueRequestCharacterListeners[uid]);delete techniqueRequestCharacterListeners[uid];}
+    });
+    players.forEach(uid=>{
+      if(techniqueRequestCharacterListeners[uid])return;
+      const ref=neo.db.ref("neo/characters/"+uid),listener=cs=>processTechniqueRequests(uid,cs.val()||{});
+      techniqueRequestCharacterListeners[uid]=listener;ref.on("value",listener);
+    });
   });
 }
 async function processTechniqueRequests(uid,character){

@@ -196,7 +196,7 @@ async function processTechniqueRequests(uid,character){
       item.status="processing";item.processingAt=Date.now();return list;
     });
     if(!claimed.committed)continue;
-    let resultText="Técnica rechazada: solicitud inválida.";
+    let resultText="Técnica rechazada: solicitud inválida.",effectApplied=false;
     try{
       const fresh=(claimed.snapshot.val()||[]).find(x=>x&&x.requestId===req.requestId);
       const battle=(window.neoSharedCombatData||{}),actor=(battle.order||[])[Number(battle.current)||0],combat=character.combat||{};
@@ -205,7 +205,7 @@ async function processTechniqueRequests(uid,character){
       if(fresh?.type==="attack"){
         const attack=fresh.attack||{},damage=Math.max(0,Math.min(9999,Number(attack.damage)||0));
         if(!Number.isFinite(Number(attack.damage))||Number(attack.d20)<1||Number(attack.d20)>20||Number(attack.d6)<1||Number(attack.d6)>6)throw new Error("La tirada de ataque no es válida.");
-        await neo.sharedRef.child("combat/lastAttack").set({damage,attacker:uid,name:String(attack.name||character.profile?.name||character.name||"Jugador").slice(0,80),critical:attack.critical===true,at:Number(attack.at)||Date.now(),requestId:req.requestId});
+        await neo.sharedRef.child("combat/lastAttack").set({damage,attacker:uid,name:String(attack.name||character.profile?.name||character.name||"Jugador").slice(0,80),critical:attack.critical===true,at:Number(attack.at)||Date.now(),requestId:req.requestId});effectApplied=true;
         resultText=String(attack.text||((attack.name||"Jugador")+" · Ataque autorizado por Master · daño "+damage+".")).slice(0,300);
       }else{
         const technique=(character.techniques||[]).find(t=>t&&String(t.id)===String(fresh?.techniqueId)&&t.learned);
@@ -217,21 +217,21 @@ async function processTechniqueRequests(uid,character){
         if(!target)throw new Error("No hay NPC activo para recibir el efecto.");
         if(effect.type==="damage"){target.hp=Math.max(0,Number(target.hp||target.hpMax||100)-effect.value);resultText=technique.name+" · "+target.name+" recibió "+effect.value+" daño (HP "+target.hp+"/"+(target.hpMax||100)+").";}
         else{target.states=[...(target.states||[])];if(!target.states.includes("Aturdido"))target.states.push("Aturdido");resultText=technique.name+" · "+target.name+" quedó Aturdido.";}
-        await neo.sharedRef.child("combat/order").set(order);
+        await neo.sharedRef.child("combat/order").set(order);effectApplied=true;
       }else{
         const players=await Promise.all((battle.order||[]).filter(x=>x&&!x.npc&&x.uid).map(async p=>{const snap=await neo.db.ref("neo/characters/"+p.uid).once("value"),ch=snap.val()||{};return {...p,hp:Math.max(0,Number(ch.hp)||0),max:Math.max(1,Number(ch.hpMax)||100)};}));
         const target=players.filter(x=>x.hp>0&&x.hp<x.max).sort((x,y)=>x.hp/x.max-y.hp/y.max)[0];
         if(!target)throw new Error("No hay aliado herido disponible.");
         const next=Math.min(target.max,target.hp+effect.value);
-        await neo.db.ref("neo/characters/"+target.uid).update({hp:next});
+        await neo.db.ref("neo/characters/"+target.uid).update({hp:next});effectApplied=true;
         resultText=technique.name+" · "+target.name+" recuperó "+(next-target.hp)+" HP.";
       }
       }
       const histRef=neo.sharedRef.child("combat/history");
       await histRef.transaction(h=>{const arr=Array.isArray(h)?h:[];return [...arr,{id:req.requestId,at:Date.now(),text:resultText}].slice(-60);});
     }catch(error){
-      resultText="Técnica sin efecto: "+(error?.message||"Error de autorización o resolución.");
-      try{
+      resultText=effectApplied?"Efecto aplicado; falló el registro posterior.":"Técnica sin efecto: "+(error?.message||"Error de autorización o resolución.");
+      if(!effectApplied)try{
         if(req.type==="attack")await neo.db.ref("neo/characters/"+uid+"/combat").transaction(combat=>{if(!combat)return combat;combat={...combat};combat.turnActions=Math.max(0,(Number(combat.turnActions)||0)-1);return combat;});
         else{const latest=(await neo.db.ref("neo/characters/"+uid).once("value")).val()||{},tech=(latest.techniques||[]).find(t=>t&&String(t.id)===String(req.techniqueId)&&t.learned);
         if(tech){

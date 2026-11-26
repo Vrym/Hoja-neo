@@ -199,15 +199,20 @@ async function processTechniqueRequests(uid,character){
     let resultText="Técnica rechazada: solicitud inválida.";
     try{
       const fresh=(claimed.snapshot.val()||[]).find(x=>x&&x.requestId===req.requestId);
-      const technique=(character.techniques||[]).find(t=>t&&String(t.id)===String(fresh?.techniqueId)&&t.learned);
-      const level=Math.max(1,Math.min(3,Number(technique?.learnedLevel||1)));
-      const effect=technique?neoTechniqueEffect(technique,level):{type:"none",value:0};
-      const battle=(window.neoSharedCombatData||{}),actor=(battle.order||[])[Number(battle.current)||0];
-      const combat=character.combat||{};
-      if(!technique||!effect.value||!["damage","condition","healTarget"].includes(effect.type))throw new Error("La técnica no tiene un efecto válido.");
+      const battle=(window.neoSharedCombatData||{}),actor=(battle.order||[])[Number(battle.current)||0],combat=character.combat||{};
       if(!battle.active||!actor||actor.uid!==uid)throw new Error("No es el turno del jugador.");
       if((Number(combat.turnActions)||0)+(Number(combat.quickActions)||0)<1)throw new Error("No se reservó la acción del turno.");
-      if(effect.type==="damage"||effect.type==="condition"){
+      if(fresh?.type==="attack"){
+        const attack=fresh.attack||{},damage=Math.max(0,Math.min(9999,Number(attack.damage)||0));
+        if(!Number.isFinite(Number(attack.damage))||Number(attack.d20)<1||Number(attack.d20)>20||Number(attack.d6)<1||Number(attack.d6)>6)throw new Error("La tirada de ataque no es válida.");
+        await neo.sharedRef.child("combat/lastAttack").set({damage,attacker:uid,name:String(attack.name||character.profile?.name||character.name||"Jugador").slice(0,80),critical:attack.critical===true,at:Number(attack.at)||Date.now(),requestId:req.requestId});
+        resultText=String(attack.name||"Jugador")+" · Ataque autorizado por Master · daño "+damage+".";
+      }else{
+        const technique=(character.techniques||[]).find(t=>t&&String(t.id)===String(fresh?.techniqueId)&&t.learned);
+        const level=Math.max(1,Math.min(3,Number(technique?.learnedLevel||1)));
+        const effect=technique?neoTechniqueEffect(technique,level):{type:"none",value:0};
+        if(!technique||!effect.value||!["damage","condition","healTarget"].includes(effect.type))throw new Error("La técnica no tiene un efecto válido.");
+        if(effect.type==="damage"||effect.type==="condition"){
         const order=[...(battle.order||[])],target=order.find(x=>x&&x.npc&&Number(x.hp)>0);
         if(!target)throw new Error("No hay NPC activo para recibir el efecto.");
         if(effect.type==="damage"){target.hp=Math.max(0,Number(target.hp||target.hpMax||100)-effect.value);resultText=technique.name+" · "+target.name+" recibió "+effect.value+" daño (HP "+target.hp+"/"+(target.hpMax||100)+").";}
@@ -221,12 +226,14 @@ async function processTechniqueRequests(uid,character){
         await neo.db.ref("neo/characters/"+target.uid).update({hp:next});
         resultText=technique.name+" · "+target.name+" recuperó "+(next-target.hp)+" HP.";
       }
+      }
       const histRef=neo.sharedRef.child("combat/history");
       await histRef.transaction(h=>{const arr=Array.isArray(h)?h:[];return [...arr,{id:req.requestId,at:Date.now(),text:resultText}].slice(-60);});
     }catch(error){
       resultText="Técnica sin efecto: "+(error?.message||"Error de autorización o resolución.");
       try{
-        const latest=(await neo.db.ref("neo/characters/"+uid).once("value")).val()||{},tech=(latest.techniques||[]).find(t=>t&&String(t.id)===String(req.techniqueId)&&t.learned);
+        if(req.type==="attack")await neo.db.ref("neo/characters/"+uid+"/combat").transaction(combat=>{if(!combat)return combat;combat={...combat};combat.turnActions=Math.max(0,(Number(combat.turnActions)||0)-1);return combat;});
+        else{const latest=(await neo.db.ref("neo/characters/"+uid).once("value")).val()||{},tech=(latest.techniques||[]).find(t=>t&&String(t.id)===String(req.techniqueId)&&t.learned);
         if(tech){
           const lvl=Math.max(1,Math.min(3,Number(tech.learnedLevel||1))),cfg=neoTechniqueConfig(tech,lvl),quick=(tech.actionKind||tech.kind)==="quick";
           await neo.db.ref("neo/characters/"+uid).transaction(ch=>{
@@ -235,6 +242,7 @@ async function processTechniqueRequests(uid,character){
             const key=quick?"quickActions":"turnActions";combat[key]=Math.max(0,(Number(combat[key])||0)-1);
             return {...ch,sm:Math.min(smMax,sm+Math.max(0,Number(cfg.cost)||0)),combat};
           });
+        }
         }
       }catch(refundError){resultText+=" · No se pudo devolver el coste automáticamente";}
     }

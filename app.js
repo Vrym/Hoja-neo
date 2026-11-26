@@ -201,7 +201,7 @@ async function processTechniqueRequests(uid,character){
       const fresh=(claimed.snapshot.val()||[]).find(x=>x&&x.requestId===req.requestId);
       const battle=(window.neoSharedCombatData||{}),actor=(battle.order||[])[Number(battle.current)||0],combat=character.combat||{};
       if(!battle.active||!actor||actor.uid!==uid)throw new Error("No es el turno del jugador.");
-      if((Number(combat.turnActions)||0)+(Number(combat.quickActions)||0)<1)throw new Error("No se reservó la acción del turno.");
+      if(fresh?.type==="attack"){if((Number(combat.turnActions)||0)<1)throw new Error("No se reservó la acción principal.");}else{const techForAction=(character.techniques||[]).find(t=>t&&String(t.id)===String(fresh?.techniqueId)&&t.learned),quick=(techForAction?.actionKind||techForAction?.kind)==="quick";if((quick?Number(combat.quickActions)||0:Number(combat.turnActions)||0)<1)throw new Error("No se reservó la acción correspondiente.");}
       if(fresh?.type==="attack"){
         const attack=fresh.attack||{},damage=Math.max(0,Math.min(9999,Number(attack.damage)||0));
         if(!Number.isFinite(Number(attack.damage))||Number(attack.d20)<1||Number(attack.d20)>20||Number(attack.d6)<1||Number(attack.d6)>6)throw new Error("La tirada de ataque no es válida.");

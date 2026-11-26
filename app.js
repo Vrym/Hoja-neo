@@ -158,12 +158,64 @@ function syncMasterCharacterListeners(){
     const ref=neo.db.ref("neo/characters/"+uid);
     const listener=snapshot=>{
       masterCharactersCache[uid]=snapshot.val()||{};
+      if(["gm","admin"].includes(neo.role))processTechniqueRequests(uid,masterCharactersCache[uid]);
       renderMasterRoster();
       if(activeEditorUid===uid&&!$("#characterEditor").dataset.dirty)fillCharacterEditor(uid,masterCharactersCache[uid],masterRolesCache[uid]);
     };
     masterCharacterListeners[uid]=listener;
     ref.on("value",listener,error=>setConsoleStatus("No se pudo sincronizar una ficha: "+friendlyError(error),true));
   });
+}
+async function processTechniqueRequests(uid,character){
+  if(!["gm","admin"].includes(neo.role)||!neo.db||!character)return;
+  const requests=character.techniqueRequests||[];
+  for(const req of requests){
+    if(!req||req.status!=="pending"||!req.requestId)continue;
+    const requestRef=neo.db.ref("neo/characters/"+uid+"/techniqueRequests");
+    const claimed=await requestRef.transaction(list=>{
+      if(!Array.isArray(list))return list;
+      const item=list.find(x=>x&&x.requestId===req.requestId);
+      if(!item||item.status!=="pending")return;
+      item.status="processing";item.processingAt=Date.now();return list;
+    });
+    if(!claimed.committed)continue;
+    let resultText="Técnica rechazada: solicitud inválida.";
+    try{
+      const fresh=(claimed.snapshot.val()||[]).find(x=>x&&x.requestId===req.requestId);
+      const technique=(character.techniques||[]).find(t=>t&&String(t.id)===String(fresh?.techniqueId)&&t.learned);
+      const level=Math.max(1,Math.min(3,Number(technique?.learnedLevel||1)));
+      const effect=technique?neoTechniqueEffect(technique,level):{type:"none",value:0};
+      const battle=(window.neoSharedCombatData||{}),actor=(battle.order||[])[Number(battle.current)||0];
+      const combat=character.combat||{};
+      if(!technique||!effect.value||!["damage","condition","healTarget"].includes(effect.type))throw new Error("La técnica no tiene un efecto válido.");
+      if(!battle.active||!actor||actor.uid!==uid)throw new Error("No es el turno del jugador.");
+      if((Number(combat.turnActions)||0)+(Number(combat.quickActions)||0)<1)throw new Error("No se reservó la acción del turno.");
+      if(effect.type==="damage"||effect.type==="condition"){
+        const order=[...(battle.order||[])],target=order.find(x=>x&&x.npc&&Number(x.hp)>0);
+        if(!target)throw new Error("No hay NPC activo para recibir el efecto.");
+        if(effect.type==="damage"){target.hp=Math.max(0,Number(target.hp||target.hpMax||100)-effect.value);resultText=technique.name+" · "+target.name+" recibió "+effect.value+" daño (HP "+target.hp+"/"+(target.hpMax||100)+").";}
+        else{target.states=[...(target.states||[])];if(!target.states.includes("Aturdido"))target.states.push("Aturdido");resultText=technique.name+" · "+target.name+" quedó Aturdido.";}
+        await neo.sharedRef.child("combat/order").set(order);
+      }else{
+        const players=await Promise.all((battle.order||[]).filter(x=>x&&!x.npc&&x.uid).map(async p=>{const snap=await neo.db.ref("neo/characters/"+p.uid).once("value"),ch=snap.val()||{};return {...p,hp:Math.max(0,Number(ch.hp)||0),max:Math.max(1,Number(ch.hpMax)||100)};}));
+        const target=players.filter(x=>x.hp>0&&x.hp<x.max).sort((x,y)=>x.hp/x.max-y.hp/y.max)[0];
+        if(!target)throw new Error("No hay aliado herido disponible.");
+        const next=Math.min(target.max,target.hp+effect.value);
+        await neo.db.ref("neo/characters/"+target.uid).update({hp:next});
+        resultText=technique.name+" · "+target.name+" recuperó "+(next-target.hp)+" HP.";
+      }
+      const histRef=neo.sharedRef.child("combat/history");
+      await histRef.transaction(h=>{const arr=Array.isArray(h)?h:[];return [...arr,{id:req.requestId,at:Date.now(),text:resultText}].slice(-60);});
+    }catch(error){resultText="Técnica sin efecto: "+(error?.message||"Error de autorización o resolución.");}
+    await requestRef.transaction(list=>{
+      if(!Array.isArray(list))return list;
+      const item=list.find(x=>x&&x.requestId===req.requestId);
+      if(item&&item.status==="processing"){item.status=resultText.startsWith("Técnica sin efecto")?"failed":"completed";item.result=resultText;item.finishedAt=Date.now();}
+      return list;
+    });
+    const hist=[...(character.combat?.history||[]),{id:req.requestId,at:Date.now(),text:resultText}].slice(-60);
+    await neo.db.ref("neo/characters/"+uid+"/combat/history").set(hist);
+  }
 }
 function renderMasterRoster(){
   const roster=$("#masterRoster");if(!roster)return;

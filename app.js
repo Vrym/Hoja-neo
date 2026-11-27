@@ -204,7 +204,7 @@ async function processTechniqueRequests(uid,character){
       const actionTech=fresh?.type==="attack"?null:(character.techniques||[]).find(t=>t&&String(t.id)===String(fresh?.techniqueId)&&t.learned);
       if(fresh?.type!=="attack"&&!actionTech)throw new Error("Técnica no aprendida.");
       const quick=fresh?.type!=="attack"&&(actionTech?.actionKind||actionTech?.kind)==="quick";
-      const actionKey=quick?"quick":"main",turnKey=String(battle.turnKey||battle.updatedAt||((Number(battle.round)||1)+":"+(Number(battle.current)||0)));
+      const actionKey=quick?"quick":"main",turnKey=String(battle.turnId||((Number(battle.round)||1)+":"+(Number(battle.current)||0)));
       const actionRef=neo.sharedRef.child("combat/authorizedActions/"+uid);
       const actionTx=await actionRef.transaction(current=>{
         const state=current&&current.turnKey===turnKey?{...current}:{turnKey,main:0,quick:0};

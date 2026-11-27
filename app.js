@@ -196,12 +196,23 @@ async function processTechniqueRequests(uid,character){
       item.status="processing";item.processingAt=Date.now();return list;
     });
     if(!claimed.committed)continue;
-    let resultText="Técnica rechazada: solicitud inválida.",effectApplied=false;
+    let resultText="Técnica rechazada: solicitud inválida.",effectApplied=false,reservedAction=null;
     try{
       const fresh=(claimed.snapshot.val()||[]).find(x=>x&&x.requestId===req.requestId);
-      const battle=(window.neoSharedCombatData||{}),actor=(battle.order||[])[Number(battle.current)||0],combat=character.combat||{};
+      const battle=(window.neoSharedCombatData||{}),actor=(battle.order||[])[Number(battle.current)||0];
       if(!battle.active||!actor||actor.uid!==uid)throw new Error("No es el turno del jugador.");
-      if(fresh?.type==="attack"){if((Number(combat.turnActions)||0)<1)throw new Error("No se reservó la acción principal.");}else{const techForAction=(character.techniques||[]).find(t=>t&&String(t.id)===String(fresh?.techniqueId)&&t.learned),quick=(techForAction?.actionKind||techForAction?.kind)==="quick";if((quick?Number(combat.quickActions)||0:Number(combat.turnActions)||0)<1)throw new Error("No se reservó la acción correspondiente.");}
+      const actionTech=fresh?.type==="attack"?null:(character.techniques||[]).find(t=>t&&String(t.id)===String(fresh?.techniqueId)&&t.learned);
+      if(fresh?.type!=="attack"&&!actionTech)throw new Error("Técnica no aprendida.");
+      const quick=fresh?.type!=="attack"&&(actionTech?.actionKind||actionTech?.kind)==="quick";
+      const actionKey=quick?"quick":"main",turnKey=String(battle.turnKey||battle.updatedAt||((Number(battle.round)||1)+":"+(Number(battle.current)||0)));
+      const actionRef=neo.sharedRef.child("combat/authorizedActions/"+uid);
+      const actionTx=await actionRef.transaction(current=>{
+        const state=current&&current.turnKey===turnKey?{...current}:{turnKey,main:0,quick:0};
+        if(Number(state[actionKey])>=1)return;
+        state[actionKey]=Number(state[actionKey]||0)+1;return state;
+      });
+      if(!actionTx.committed)throw new Error(quick?"Acción rápida ya utilizada este turno.":"Acción principal ya utilizada este turno.");
+      reservedAction={ref:actionRef,turnKey,key:actionKey};
       if(fresh?.type==="attack"){
         const d6=Math.floor(Math.random()*6)+1,d20=Math.floor(Math.random()*20)+1;
         const totals=neoProgressionTotals(character),pc=Number(character.pc??character.pcBase??10),crit=Number(totals.crit)||0;
@@ -237,8 +248,8 @@ async function processTechniqueRequests(uid,character){
     }catch(error){
       resultText=effectApplied?"Efecto aplicado; falló el registro posterior.":"Técnica sin efecto: "+(error?.message||"Error de autorización o resolución.");
       if(!effectApplied)try{
-        if(req.type==="attack")await neo.db.ref("neo/characters/"+uid+"/combat").transaction(combat=>{if(!combat)return combat;combat={...combat};combat.turnActions=Math.max(0,(Number(combat.turnActions)||0)-1);return combat;});
-        else{const latest=(await neo.db.ref("neo/characters/"+uid).once("value")).val()||{},tech=(latest.techniques||[]).find(t=>t&&String(t.id)===String(req.techniqueId)&&t.learned);
+        if(reservedAction)await reservedAction.ref.transaction(current=>{if(!current||current.turnKey!==reservedAction.turnKey)return current;return {...current,[reservedAction.key]:Math.max(0,(Number(current[reservedAction.key])||0)-1)};});
+        if(req.type!=="attack"){const latest=(await neo.db.ref("neo/characters/"+uid).once("value")).val()||{},tech=(latest.techniques||[]).find(t=>t&&String(t.id)===String(req.techniqueId)&&t.learned);
         if(tech){
           const lvl=Math.max(1,Math.min(3,Number(tech.learnedLevel||1))),cfg=neoTechniqueConfig(tech,lvl),quick=(tech.actionKind||tech.kind)==="quick";
           await neo.db.ref("neo/characters/"+uid).transaction(ch=>{
